@@ -1,0 +1,258 @@
+=======
+Prepare
+=======
+
+Verify the boot mode
+--------------------
+# ls /sys/firmware/efi/efivars
+# efivar -l
+
+Set the keyboard layout
+-----------------------
+# ls /usr/share/kbd/keymaps/**/*.map.gz
+# loadkeys dvorak
+# localectl list-keymaps
+
+Console fonts
+-------------
+# ls /usr/share/kbd/consolefonts/
+# setfont lat9w-16
+# setfont cyr-sun16
+# showconsolefont
+
+Connect to the Internet
+-----------------------
+dhcpcd
+# ping 8.8.8.8
+
+systemd-networkd -> systemd.network(5)
+netctl -> netctl.profile(7)
+
+ethernet
+# ip link
+
+wireless
+# iw dev
+
+# systemctl stop dhcpcd@interface.service
+example
+# systemctl stop dhcpcd@enp0s25.service
+# systemctl stop dhcpcd.service
+
+# wifi-menu -o wlp2s0
+# vim /etc/netctl
+
+# cp /etc/netctl/examples/ethernet-static /etc/netctl
+# netctl start ethernet-static
+# vim /etc/dhcpcd.conf
+interface enp2s0f0
+static ip_address=192.168.0.10/24
+static routers=192.168.0.1
+static domain_name_servers=192.168.0.1 8.8.8.8
+# systemctl restart dhcpcd.service
+
+Update the system clock
+-----------------------
+# timedatectl set-ntp true
+# timedatectl status
+
+Partition the disks
+-------------------
+# lsblk
+
+# parted /dev/sdX print
+
+# fdisk -l /dev/sdX print
+# fdisk /dev/sdX
+
+Format the partitions
+---------------------
+Mount	Partition	Part.type	Bootable	Size
+/	/dev/sdX1	Linux 		Yes		Dev.size
+
+# lsblk /dev/sdX
+
+# mkfs.ext4 /dev/sdXy
+
+Swap
+----
+# mkswap /dev/sdXy
+# swapon /dev/sdXy
+
+UEFI/GPT fat32
+--------------
+# mkfs.fat -F32 /dev/sdXy
+
+Mount the partitions
+--------------------
+/, /mnt/boot, /mnt/home
+# mount /dev/sdXy /mnt
+
+============
+Installation
+============
+
+Select the mirrors
+------------------
+# vim /etc/pacman.d/mirrorlist
+
+Install the base packages
+-------------------------
+# pacstrap /mnt base
+# pacstrap -i /mnt base base-devel
+
+====================
+Configure the system
+====================
+
+Fstab
+-----
+# genfstab -p /mnt >> /mnt/etc/fstab
+# genfstab -U -p /mnt >> /mnt/etc/fstab
+# vim /mnt/etc/fstab
+
+Change root
+-----------
+# arch-chroot /mnt
+# arch-chroot /mnt /bin/bash
+
+Locale
+------
+Uncomment the "en_US.UTF-8 UTF-8" or needed locales in
+# vim /etc/locale.gen
+# locale-gen
+
+Create locale.conf
+# vim /etc/locale.conf
+LANG=your_locale
+LANG=en_US.UTF-8
+# vim $HOME/.config/locale.conf
+# export LANG=en_US.UTF-8
+
+Note: LCtrl+LShift to switch layout
+
+Keyboard layout
+# vim /etc/vconsole.conf
+KEYMAP=dvorak
+FONT=lat9w-16
+
+Time zone
+---------
+# tzselect
+
+# ln -s /usr/share/zoneinfo/Zone/SubZone /etc/localtime
+# hwclock --systohc --utc
+
+Network configuration
+---------------------
+# vim /etc/hostname
+myhostname
+# vim /etc/hosts
+127.0.0.1	localhost.localdomain	localhost	 myhostname
+::1		localhost.localdomain	localhost	 myhostname
+
+Wired
+-----
+# systemctl enable dhcpcd@interface.service
+
+Wireless
+--------
+# pacman -S iw wpa_supplicant dialog
+
+Initramfs
+---------
+# mkinitcpio -p linux
+
+Boot loader
+-----------
+# pacman intel-ucode
+# pacman linux-firmware
+# pacman -S grub
+# grub-install --target=i386-pc --recheck /dev/sdX
+# grub-mkconfig -o /boot/grub/grub.cfg
+
+Root password
+-------------
+# passwd
+
+======
+Reboot
+======
+
+Ctrl+D
+# exit
+# umount -R /mnt
+fuser
+# reboot
+
+=======================
+General recommendations
+=======================
+
+Pacman
+------
+# pacman -Qlq pacman | grep bin
+# pacman -Si
+
+# pacman -Syu package_name
+
+Installing specific packages
+# pacman -S package_name1 package_name2
+
+# pacman -S $(pacman -Ssq package_regex)
+# pacman -S extra/package_name
+
+# pacman -S plasma-{desktop,mediacenter,nm}
+# pacman -S plasma-{workspace{,-wallpapers},pa}
+
+Enter a selection (default=all): 1-10 15
+Enter a selection (default=all): ^5-8 ^2
+
+# pacman -Sg gnome
+
+Removing packages
+# pacman -R package_name
+# pacman -Rs package_name
+Bad boy:)
+# pacman -Rsc package_name
+Dirty method
+# pacman -Rdd package_name
+Remove with configurations (.pacsave)
+# pacman -Rn package_name
+
+Update packages
+# pacman -Syu
+
+Search package
+# pacman -Ss string1 string2
+search already installed
+# pacman -Qs string1 string2
+
+info about package
+# pacman -Si package_name
+# pacman -Qi package_name
+
+Cleaning the package cache
+# pacman -Sc
+
+====================================
+ После установки / Post-­installation
+====================================
+
+# useradd -m -g users -G wheel,audio,video,storage,network
+,networkmanager  -s /bin/bash delta
+
+# passwd delta
+New UNIX password
+
+# nano /etc/sudoers
+
+delta ALL=(ALL) ALL
+
+systemctl --type=service
+
+useradd -g users -G wheel,audio,video,storage -m delta
+
+pacman -Suy xorg-server xorg-xinit xorg-utils xorg-server-utils mesa mesa-demos xf86-input-synaptics xf86-video-intel
+
+# systemctl enable lightdm.service

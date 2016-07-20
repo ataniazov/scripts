@@ -1,0 +1,469 @@
+=======================================
+ Изменение языка / Change the language
+=======================================
+
+# localectl list-keymaps
+
+# ls /usr/share/kbd/keymaps/
+
+# loadkeys (ru, ua, dvorak, fr, uk, be-latin1)
+
+# setfont cyr-sun16
+
+# ls /usr/share/kbd/consolefonts/
+
+# showconsolefont
+
+# nano /etc/locale.gen
+---------------------------------------
+...
+en_US.UTF-8 UTF-8
+#en_US ISO-8859-1
+...
+ru_RU.UTF-8 UTF-8
+#ru_RU ISO-8859-1
+...
+---------------------------------------
+
+# locale-gen
+
+# export LANG=ru_RU.UTF-8
+
+Note: LCtrl+LShift to switch layout
+
+
+
+==================================
+   Настройка интернет­соединения
+ --------------------------------
+ Establish an internet connection
+==================================
+
+# ip link
+-------------------------------------------
+Note: Interface name start with the letter
+
+"e"  - Ethernet
+"lo" - Loop
+"w"  - Wireless
+-------------------------------------------
+
+======================
+ 1. Проводное / Wired
+======================
+
+# systemctl stop dhcpcd.service
+
+# ip link
+
+# ip link set название_интерфейса up
+
+# ip addr add ip-адрес / биты_маски dev название_интерфейса
+
+# ip route add default via ip-адрес
+
+# nano /etc/resolv.conf
+---------------------------------------
+nameserver 61.23.173.5
+nameserver 61.95.849.8
+search example.com
+
+---------------------------------------
+
+
+============================
+ 2. Беспроводное / Wireless
+============================
+
+# iw dev
+---------------------------------------
+phy#0
+        Interface название_интерфейса
+                ifindex 3
+                wdev 0x1
+                addr 00:11:22:33:44:55
+                type managed
+                
+---------------------------------------
+
+
+# wifi-menu название_интерфейса
+
+====================================================
+ 3. Без использования wifi­-menu / Without wifi­-menu
+====================================================
+
+# ip link set название_интерфейса up
+
+# ip link show название_интерфейса
+
+# dmesg | grep firmware
+
+# iw dev название_интерфейса scan | grep SSID
+
+# wpa_supplicant -B -i название_интерфейса -c <(wpa_passphrase "ssid" "пароль")
+
+# dhcpcd название_интерфейса
+
+==================================================================================
+ Note: If that does not work, issue the following commands:
+----------------------------------------------------------------------------------
+# echo 'ctrl_interface=DIR=/run/wpa_supplicant' > /etc/wpa_supplicant.conf
+# wpa_passphrase ssid пароль >> /etc/wpa_supplicant.conf
+# ip link set название_интерфейса up
+# wpa_supplicant -B -D nl80211 -c /etc/wpa_supplicant.conf -i название_интерфейса
+# dhcpcd -A название_интерфейса
+==================================================================================
+ Note: If wpa_supplicant complains about an unsupported driver at step 4,
+just leave out the  -D nl80211 parameter:
+----------------------------------------------------------------------------------
+# wpa_supplicant -B -c /etc/wpa_supplicant.conf -i интерфейс
+==================================================================================
+
+# systemctl stop dhcpcd.service
+
+# kill (pid process "dhcpcd")
+
+# dhcpcd название_интерфейса
+
+# ping -c 3 www.google.com
+
+
+
+===========================
+ Подготовка жесткого диска
+ -------------------------
+ Prepare the storage drive
+===========================
+
+===================================================
+ Стирание таблицы разделов / Erase partition table
+===================================================
+
+# sgdisk --zap-all /dev/sdX
+
+
+===================================
+ Схема разметки / Partition scheme
+===================================
+
+# lsblk -f
+
+# cfdisk /dev/sdX
+
+---------------------------------------------------
+new primary (size):
+
+boot	512	[Bootable]	/dev/sdX1
+/	18000			/dev/sdX2
+home	24000			/dev/sdX3
+swap	3200	[SWAP]
+
+---------------------------------------------------
+Note: if (RAM < 4GB) swap = RAM*2; else swap = RAM;.
+
+
+# fdisk /dev/sdX
+
+1.  Command (m for help):  type  o  and press  Enter
+2.  Command (m for help):  type  n  and press  Enter
+3.  Partition type:  Select (default p):  press  Enter
+4.  Partition number (1-4, default 1):  press  Enter
+5.  First sector (2048-209715199, default 2048):  press  Enter
+Last sector, +sectors or +size{K,M,G,T,P} (2048-209715199....., default
+6.  209715199):  type  +18G  and press Enter.
+
+
+
+===============================================
+ Создание файловых систем / Create filesystems
+===============================================
+
+# mkfs.ext4 /dev/sdX1
+# mkfs.ext4 /dev/sdX2
+# mkfs.ext4 /dev/sdX3
+
+# mkswap /dev/sdX4
+# swapon /dev/sdX4
+
+
+# mount /dev/sdX2 /mnt
+
+# mkdir /mnt/boot
+# mkdir /mnt/home
+
+# mount /dev/sdX1 /mnt/boot
+# mount /dev/sdX3 /mnt/home
+
+
+
+=================================
+ Выбор зеркала / Select a mirror
+=================================
+
+# nano /etc/pacman.d/mirrorlist
+------------------------------------------------------------
+##
+## Arch Linux repository mirrorlist
+## Sorted by mirror score from mirror status page
+## Generated on 2012-MM-DD
+##
+
+Server = http://mirror.example.xyz/archlinux/$repo/os/$arch
+...
+------------------------------------------------------------
+
+
+
+=====================================================
+ Установка базовой системы / Install the base system
+=====================================================
+
+# pacstrap -i /mnt base base-devel
+
+??????# pacstrap -i /mnt grub-bios
+
+ Note: The  -i  switch can be omitted if you wish to
+install every package without prompting. If pacman complains that
+error: failed to commit transaction (invalid or corrupted package),
+run the following command:
+
+# pacman-key --init && pacman-key --populate archlinux
+
+
+
+=========================================
+ Генерированиe fstab / Generate an fstab
+=========================================
+
+# genfstab -U -p /mnt >> /mnt/etc/fstab
+# nano /mnt/etc/fstab
+
+
+
+======================================
+  Chroot и настройка базовой системы
+ ------------------------------------
+ Chroot and configure the base system
+======================================
+
+# arch-chroot /mnt /bin/bash
+
+
+
+=================
+ Локаль / Locale
+=================
+
+# nano /etc/locale.gen
+---------------------------------------
+...
+en_US.UTF-8 UTF-8
+#en_US ISO-8859-1
+...
+ru_RU.UTF-8 UTF-8
+#ru_RU ISO-8859-1
+...
+---------------------------------------
+
+# echo LANG=ru_RU.UTF-8 > /etc/locale.conf
+
+# locale-gen
+
+# export LANG=ru_RU.UTF-8
+
+# locale
+
+=========================================
+ Консольный шрифт и раскладка клавиатуры
+ ---------------------------------------
+	 Console font and keymap
+=========================================
+
+# nano /etc/vconsole.conf
+-----------------------------
+KEYMAP=ru
+FONT=cyr-sun16
+FONT_MAP=
+
+-----------------------------
+
+
+
+============================
+ Временная зона / Time zone
+============================
+
+# ln -s /usr/share/zoneinfo/Asia/Istanbul /etc/localtime
+
+ Note: If you get  ln: failed to create symbolic link '/etc/localtime': File exists,
+check the existing file with  ls -l /etc/localtime  and add the  -f  option to the
+ln command to overwrite it.
+
+
+
+==================================
+ Аппаратные часы / Hardware clock
+==================================
+
+# hwclock --systohc --utc
+
+
+
+=====================
+ Имя узла / Hostname
+=====================
+
+# echo scorpio > /etc/hostname
+
+# nano /etc/hosts
+---------------------------------------------------------------
+#
+# /etc/hosts: static lookup table for host names
+#
+
+#<ip-address>	<hostname.domain.org>	<hostname>
+127.0.0.1	localhost.localdomain	localhost	scorpio
+::1		localhost.localdomain	localhost	scorpio
+
+# End of file
+---------------------------------------------------------------
+NOT: Change all localhost.localdomain to $hostname
+
+
+
+========================================
+ Настройка сети / Configure the network
+========================================
+
+# pacman -S iw wireless_tools wpa_supplicant wpa_actiond dialog
+
+
+
+==============================================
+ Автоматическое подключение к известным сетям
+ --------------------------------------------
+   Connect automatically to known networks
+==============================================
+
+# pacman -S wpa_actiond
+
+# systemctl enable netctl-auto@wlan0.service
+
+
+
+====================================
+ Установка пароля суперпользователя
+ ----------------------------------
+       Set the root password
+====================================
+
+# passwd
+New UNIX password
+
+
+
+======
+ GRUB
+======
+
+# pacman -S grub
+
+# grub-install --target=i386-pc --recheck /dev/sdX
+
+# pacman -S os-prober
+
+# grub-mkconfig -o /boot/grub/grub.cfg
+
+
+
+========================================
+ Отмонтирование разделов и перезагрузка
+ --------------------------------------
+   Unmount the partitions and reboot
+========================================
+
+# exit
+
+Note: or press Ctrl+D
+
+# umount /mnt/home
+# umount /mnt/boot
+# umount /mnt
+
+Note: or # umount -R /mnt
+
+# reboot
+
+
+
+============================================
+
+
+
+====================================
+ После установки / Post-­installation
+====================================
+
+# useradd -m -g users -G wheel,audio,video,storage,network
+,networkmanager  -s /bin/bash delta
+
+# passwd delta
+New UNIX password
+
+# nano /etc/sudoers
+
+delta ALL=(ALL) ALL
+
+systemctl --type=service
+
+
+
+========
+ YAOURT
+========
+
+# nano /etc/pacman.conf
+---------------------------------------
+...
+[archlinuxfr]
+SigLevel = Never
+Server = http://repo.archlinux.fr/$arch
+...
+---------------------------------------
+
+Note: There is a cheerful option. Adding an  ILoveCandy  line to  # Misc options 
+ section makes boring hash­symbols look like famous pacman and dots, that he eats :D
+
+pacman -Sy yaourt
+
+
+$ lspci | grep VGA
+
+
+====minimal=====
+# pacman -Suy xorg-server xorg-xinit xorg-utils xorg-server-utils 
+mesa mesa-demos xf86-input-synaptics xf86-video-intel
+
+=====all=======
+# pacman -Suy xorg-xinit xorg-utils
+
+
+
+# pacman -S mate-extra mate-applet-softupd mate-nettool
+
+# pacman -S mate-themes-extras variety mintmenu
+
+# pacman -S lightdm-gtk2-greeter
+
+# pacman -S networkmanager network-manager-applet
+
+
+
+# systemctl enable lightdm.service
+
+
+
+# pacman -S ttf-dejavu
+
+============================

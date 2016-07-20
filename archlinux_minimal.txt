@@ -1,0 +1,143 @@
+boot arch linux i686
+
+ping ya.ru
+
+dhcpcd
+
+kill (process dhcpcd)
+
+systemctl stop dhcpcd.service
+
+cfdisk
+
+new
+primary (size )
+/    18000
+swap 4000
+boot 512
+home ?
+
+NOT: swap 2*ram
+
+mkfs.ext4 /dev/sda1
+mkfs.ext4 /dev/sda2
+mkfs.ext4 /dev/sda3
+
+mkswap /dev/sda4
+swapon /dev/sda4
+
+mount /dev/sda2 /mnt
+mkdir /mnt/boot
+mkdir /mnt/home
+
+mount /dev/sda1 /mnt/boot
+mount /dev/sda3 /mnt/home
+
+pacstrap /mnt base base-devel
+
+pacstrap /mnt grub-bios
+
+
+genfstab -p /mnt >> /mnt/etc/fstab
+
+arch-chroot /mnt
+
+nano /etc/hostname   $hostname dell-pc
+nano /etc/host
+
+change all localhost.localdomain to $hostname
+
+
+nano /etc/vconsole.conf
+
+KEYMAP=ru
+FONT=cyr-sun16
+FONT_MAP=
+
+ln -s /usr/share/zoneinfo/Asia/Istanbul /etc/localtime
+hwclock --systohc --utc
+
+nano /etc/locale.gen
+
+comment en_US.UTF-8
+
+ru_RU.UTF-8 UTF-8
+en_US.UTF-8 UTF-8
+
+nano /etc/locale.conf
+
+LANG="ru_RU.UTF-8"
+
+locale-gen
+
+grub-install /dev/sda
+
+grub-mkconfig -o /boot/grub/grub.cfg
+
+
+
+passwd
+
+New UNIX password
+
+
+exit
+
+umount /mnt/home
+umount /mnt/boot
+umount /mnt
+
+reboot
+
+
+=========================================
+
+
+dhcpcd
+
+
+(systemctl enable dhcpcd)
+
+
+ping ya.ru
+
+lspci | grep -i vga
+
+====minimal=====
+pacman -Suy xorg-server xorg-xinit xorg-utils xorg-server-utils mesa mesa-demos xf86-input-synaptics xf86-video-intel
+
+=====all=======
+pacman -Suy xorg-xinit xorg-utils
+
+
+pacman -S xfce4 lxdm
+
+
+systemctl enable lxdm
+
+
+=================================
+
+
+useradd -g users -G wheel,audio,video,storage -m delta
+passwd delta
+NEW PASSWORD
+
+
+nano /etc/sudoers
+delta ALL=(ALL) ALL
+
+setxkbmap -layout "us,ru" -option "grp:ctrl_shift_toggle"
+
+
+
+nano /etc/pacman.conf
+
+
+YAOURT
+
+[archlinuxfr]
+SigLevel = Never
+Server = http://repo.archlinux.fr/$arch
+
+
