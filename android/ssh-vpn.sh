@@ -1,10 +1,12 @@
 #!/bin/bash
 
-## not: server /etc/ssh/sshd_config dosyasina "PermitTunnel yes" satirini ekle
+## not 1: server /etc/ssh/sshd_config dosyasina "PermitTunnel yes" satirini ekle
+## not 2: client icin ifconfig kurulmasi gerekir
+## not 3: android icin busybox kurulmasi gerekir
 
 if [ "$1" == "--help" ] || [ "$1" == "" ]; then
-	echo "usage : ssh-vpn.sh RSA_FILE SERVER [TUN_NO] [PORT]"
-	echo "        ssh-vpn.sh --pwd SERVER [TUN_NO] [PORT]"
+	echo "usage : ssh-vpn.sh RSA_FILE SERVER_IP [PORT]"
+	echo "        ssh-vpn.sh --pwd SERVER_IP [PORT]"
 	exit
 fi
 
@@ -19,8 +21,8 @@ ID_RSA=$1
 SERVER_IP_OR_DOMAIN=$2
 SERVER_PORT=$3
 IP_1=10
-IP_2=168
-IP_3=189
+IP_2=0
+IP_3=0
 # IP_4 -> server,client 1,2 - 3,4 - 5,6 ... seklinde otomatik hesaplaniyor
 
 TUN_NO=0 # hata verirse otomatik arttiriyor
